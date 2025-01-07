@@ -59,28 +59,27 @@ public class FibonacciHeap {
 	public void removeFromRootList(HeapNode node) { //O(1)
 		node.next.prev = node.prev;
 		node.prev.next = node.next;
-		node.next = node;
-		node.prev = node;
 		this.numTrees--;
 	}
 
-	public void detachChildren(HeapNode node) { //O(node.rank)
+	public void detachChildren(HeapNode node) { // O(node.rank)
 		HeapNode curr = node.child;
 		if (curr == null) {
 			return;
-
 		}
+
+		HeapNode start = curr;
+
 		do {
 			HeapNode next = curr.next;
 			addToRootList(curr);
 			curr.parent = null;
 			curr.mark = false;
 			curr = next;
-		} while (curr != null);
+		} while (curr != start);
 
 		node.child = null;
 		node.rank = 0;
-
 	}
 
 	/**
@@ -146,16 +145,18 @@ public class FibonacciHeap {
 		if (isHeapEmpty()) {
 			return;
 		}
+		HeapNode oldMin = min;
+		min = (min.next != min) ? min.next : min.child;
 
 		// Store a reference to the next node in the root list
-		HeapNode startNode = (min.next != min) ? min.next : min.child;
+		HeapNode startNode = min;
 
 		//Does min have kids?
-		if (min.child != null) {
-			detachChildren(min);
+		if (oldMin.child != null) {
+			detachChildren(oldMin);
 		}
 
-		removeFromRootList(min);
+		removeFromRootList(oldMin);
 
 		size--;
 
@@ -168,33 +169,36 @@ public class FibonacciHeap {
 	}
 
 
-	public void consolidate(HeapNode startNode) { //O(log(n)
-		//open table for ranks
-		int maxRank = (int) Math.ceil(Math.log(size) / Math.log(2));
+	public void consolidate(HeapNode startNode) {
+		if (startNode == null) {
+			return;
+		}
+
+		int maxRank = (int) Math.ceil(Math.log(size) / Math.log(2)) + 1;
 		HeapNode[] table = new HeapNode[maxRank + 1];
 
-		//iterate through root list and for each check whether the matching cell of table is empty.
-		//if not - link and move on
 		HeapNode curr = startNode;
+		int count = 0;
 
 		do {
 			HeapNode next = curr.next;
 			int rank = curr.rank;
 
-
 			while (table[rank] != null) {
 				HeapNode tennant = table[rank];
-				curr = link(tennant, curr);
-
+				curr = link(tennant, curr); // Merge trees
 				table[rank] = null;
 				rank++;
 			}
 
 			table[rank] = curr;
 			curr = next;
+
+			count++;
 		} while (curr != startNode);
 
-		//rebuild rootlist and restore the one true min
+		// Rebuild the root list and update min
+		min = null;
 		for (HeapNode node : table) {
 			if (node != null) {
 				if (min == null || node.key < min.key) {
@@ -203,6 +207,7 @@ public class FibonacciHeap {
 			}
 		}
 	}
+
 
 
 	public HeapNode link(HeapNode y, HeapNode x) {  //O(1)
@@ -234,7 +239,7 @@ public class FibonacciHeap {
 			return x;
 
 
-		//x being attached to y. for some reason the code didn't work properly when i did it without duplicating code
+			//x being attached to y. for some reason the code didn't work properly when i did it without duplicating code
 		} else {
 			removeFromRootList(x);
 

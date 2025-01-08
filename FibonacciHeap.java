@@ -143,128 +143,153 @@ public class FibonacciHeap {
 	 */
 	public void deleteMin() {
 		if (isHeapEmpty()) {
-			return;
+			return; // Nothing to delete
 		}
-		HeapNode oldMin = min;
-		min = (min.next != min) ? min.next : min.child;
 
-		// Store a reference to the next node in the root list
-		HeapNode startNode = min;
+		HeapNode oldMin = this.min;
 
-		//Does min have kids?
+		// 1) Move children of oldMin to the root list
 		if (oldMin.child != null) {
 			detachChildren(oldMin);
+			// detachChildren() adds each child to the root list
+			// and sets child's parent=null, node.child=null, etc.
 		}
 
+		// 2) Remove oldMin itself from the root list
 		removeFromRootList(oldMin);
+		this.size--;
 
-		size--;
-
-		//is the heap empty after the removal of min?
-		if (size == 0) {
-			min = null;
+		// 3) If that was the only node, heap becomes empty
+		if (this.size == 0) {
+			this.min = null;
+			this.numTrees = 0;  // no trees left
 			return;
 		}
-		consolidate(startNode);
+
+		// 4) Pick an arbitrary root as the new min (e.g., oldMin.next)
+		//    We'll find the actual minimum in consolidate().
+		this.min = oldMin.next;
+
+		// 5) Consolidate to merge any trees of the same rank
+		consolidate();
 	}
 
 
-	public void consolidate(HeapNode startNode) {
-		if (startNode == null) {
+
+	public void consolidate() {
+		if (this.min == null) {
 			return;
 		}
 
-		int maxRank = (int) Math.ceil(Math.log(size) / Math.log(2)) + 1;
-		HeapNode[] table = new HeapNode[maxRank + 1];
+		// 1) Count how many roots we currently have
+		int rootCount = 1;
+		HeapNode start = this.min;
+		HeapNode current = this.min.next;
+		while (current != start) {
+			rootCount++;
+			current = current.next;
+		}
 
-		HeapNode curr = startNode;
-		int count = 0;
+		// 2) Create a plain array for those roots
+		HeapNode[] rootArray = new HeapNode[rootCount];
 
-		do {
-			HeapNode next = curr.next;
-			int rank = curr.rank;
+		// 3) Fill the array by traversing again
+		rootArray[0] = this.min;
+		int index = 1;
+		current = this.min.next;
+		while (current != start) {
+			rootArray[index++] = current;
+			current = current.next;
+		}
 
-			while (table[rank] != null) {
-				HeapNode tennant = table[rank];
-				curr = link(tennant, curr); // Merge trees
-				table[rank] = null;
-				rank++;
+		// (We now have each root exactly once in rootArray.)
+
+		// 4) Create a rank table for merging
+		int maxRank = (int) Math.ceil(Math.log(this.size) / Math.log(2)) + 2;
+		HeapNode[] rankTable = new HeapNode[maxRank];
+
+		// 5) Merge trees of the same rank
+		for (int i = 0; i < rootCount; i++) {
+			HeapNode x = rootArray[i];
+			int r = x.rank;
+			// continue linking while there's a root of the same rank
+			while (rankTable[r] != null) {
+				HeapNode y = rankTable[r];
+				// ensure x is the root with the smaller key
+				if (y.key < x.key) {
+					HeapNode temp = x;
+					x = y;
+					y = temp;
+				}
+				link(y, x);        // y becomes child of x
+				rankTable[r] = null;
+				r++;
 			}
+			rankTable[r] = x;
+		}
 
-			table[rank] = curr;
-			curr = next;
+		// 6) Rebuild the root list from rankTable
+		this.min = null;
+		this.numTrees = 0;
 
-			count++;
-		} while (curr != startNode);
+		for (int i = 0; i < rankTable.length; i++) {
+			if (rankTable[i] == null) {
+				continue;
+			}
+			HeapNode node = rankTable[i];
+			node.parent = null;
 
-		// Rebuild the root list and update min
-		min = null;
-		for (HeapNode node : table) {
-			if (node != null) {
-				if (min == null || node.key < min.key) {
-					min = node;
+			// If no min yet, node becomes the only root
+			if (this.min == null) {
+				this.min = node;
+				node.prev = node;
+				node.next = node;
+			} else {
+				// Insert node into the circular root list (next to this.min)
+				node.prev = this.min;
+				node.next = this.min.next;
+				this.min.next.prev = node;
+				this.min.next = node;
+				// Update min if needed
+				if (node.key < this.min.key) {
+					this.min = node;
 				}
 			}
+			this.numTrees++;
 		}
 	}
 
 
 
-	public HeapNode link(HeapNode y, HeapNode x) {  //O(1)
-
-		//y being attached to x
-		if (y.key >= x.key) {
-			//remove the inferior node (the one with bigger key)
-			removeFromRootList(y);
-
-			//pointer game:
-			if (x.child != null) {
-				HeapNode child = x.child;
-				y.next = child.next;
-				child.next.prev = y;
-				child.next = y;
-				y.prev = child;
-			} else {
-				x.child = y;
-				y.next = y;
-				y.prev = y;
-			}
-
-			//papa!
-			y.parent = x;
-			x.rank++;
-			y.mark = false;
-			totalLinks++;
-
-			return x;
 
 
-			//x being attached to y. for some reason the code didn't work properly when i did it without duplicating code
+
+
+	public void link(HeapNode y, HeapNode x) {
+		// Remove y from the root list (we already know y is a root if rankTable had it).
+		removeFromRootList(y);
+
+		// Make y a child of x
+		if (x.child == null) {
+			x.child = y;
+			y.prev = y;
+			y.next = y;
 		} else {
-			removeFromRootList(x);
-
-			//pointer game:
-			if (y.child != null) {
-				HeapNode child = y.child;
-				x.next = child.next;
-				child.next.prev = x;
-				child.next = x;
-				x.prev = child;
-			} else {
-				y.child = x;
-				x.next = x;
-				x.prev = x;
-			}
-
-			//papa!
-			x.parent = y;
-			y.rank++;
-			x.mark = false;
-			totalLinks++;
-
-			return y;
+			// Insert y into x's child-list (circular)
+			HeapNode c = x.child;
+			y.prev = c;
+			y.next = c.next;
+			c.next.prev = y;
+			c.next = y;
 		}
+
+		y.parent = x;
+		x.rank++;
+		y.mark = false;
+
+		this.totalLinks++;
 	}
+
 // Documentation insert:
 	/**
 	 * deleteMin, as we've implemented it, removes the minimum node, detaches its children (if any) to the root list,

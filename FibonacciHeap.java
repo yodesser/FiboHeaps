@@ -62,7 +62,7 @@ public class FibonacciHeap {
 		this.numTrees--;
 	}
 
-	public void detachChildren(HeapNode node) { // O(node.rank)
+	public void detachChildren(HeapNode node) { // O(node.rank) = O(logn)
 		HeapNode curr = node.child;
 		if (curr == null) {
 			return;
@@ -124,7 +124,7 @@ public class FibonacciHeap {
 	 * <p>
 	 * Time complexity O(1)
 	 */
-	public HeapNode findMin() {
+	public HeapNode findMin() { //O(1)
 		if (isHeapEmpty()) {
 			return null;
 		}
@@ -141,7 +141,7 @@ public class FibonacciHeap {
 	/**
 	 * Delete the minimal item
 	 */
-	public void deleteMin() {
+	public void deleteMin() { //O(logn)
 		if (isHeapEmpty()) {
 			return; // Nothing to delete
 		}
@@ -175,8 +175,7 @@ public class FibonacciHeap {
 	}
 
 
-
-	public void consolidate() {
+	public void consolidate() { //O(logn)
 		if (this.min == null) {
 			return;
 		}
@@ -260,12 +259,7 @@ public class FibonacciHeap {
 	}
 
 
-
-
-
-
-
-	public void link(HeapNode y, HeapNode x) {
+	public void link(HeapNode y, HeapNode x) { //O(1)
 		// Remove y from the root list (we already know y is a root if rankTable had it).
 		removeFromRootList(y);
 
@@ -290,21 +284,23 @@ public class FibonacciHeap {
 		this.totalLinks++;
 	}
 
-// Documentation insert:
-	/**
-	 * deleteMin, as we've implemented it, removes the minimum node, detaches its children (if any) to the root list,
-	 * removes the node from the root list, consolidates the heap by merging trees of the same rank, and updates the
-	 * minimum pointer to the smallest node in the new root list.
-	 * Time complexity: since deleteMin() does nothing but simple O(1) operations, and calling its helper functions, all
-	 * one by one, it's dominated by the complexity of the helpers:
-	 * detachChildren (whose complexity is as the number of children of the input which is upper-bounded by log(n)).
-	 * consolidate opens an array of HeapNodes (O(1)) and proceeds to iterate over the rootlist, which initially contains
-	 * O(logn) trees (due to the heap's structure). Each merge (via link) takes O(1). Finally, finding the new minimum
-	 * during consolidate also involves iterating through the root list, adding another O(logn) steps. so the total work
-	 * in consolidate is O(logn), and so is the complexity of deleteMin altogether.
-	 *
-	 *
-	 */
+// Documentation deleteMin:
+/**
+ * deleteMin removes the global minimum node from the heap and performs the following steps:
+ * 1) If the heap is empty, there is nothing to delete and the method returns.
+ * 2) Otherwise, it detaches the children (if any) of the minimum node and adds them to the root list.
+ * 3) It removes the minimum node from the root list and decreases the total size by one.
+ * 4) If the heap is not empty after removal, it calls consolidate() to restore the Fibonacci Heap structure:
+ *    - consolidate first counts how many roots are in the circular list and stores them in a temporary array (rootArray).
+ *      This involves traversing the root list twice: once to count and once to populate the array.
+ *    - It then merges any roots of the same rank (via link operations) and rebuilds a new root list, updating the min pointer.
+ *
+ * Time complexity:
+ * - detachChildren costs O(r) = O(log n), where r is the rank (number of children) of the deleted node.
+ * - consolidate involves creating and iterating over the rootArray of size O(log n) (since a Fibonacci Heap has O(log n) roots),
+ *   merging them in O(1) per link, and finally constructing the new root list and finding the min in another O(log n) pass.
+ * - Thus, deleteMin overall runs in O(log n) time.
+ */
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -313,56 +309,206 @@ public class FibonacciHeap {
 	 * <p>
 	 * Decrease the key of x by diff and fix the heap.
 	 */
-	public void decreaseKey(HeapNode x, int diff) {
-		return; // should be replaced by student code
+	public void decreaseKey(HeapNode x, int diff) {  //O(1)
+		if (diff <= 0 || x == null) {
+			return; // or throw exception -- must have 0 < diff < x.key
+		}
+
+		x.key -= diff;
+
+		HeapNode parent = x.parent;
+		if (parent != null && x.key < parent.key) {
+			// x now violates the min-heap property
+			cut(x, parent);
+			cascadingCut(parent);
+		}
+
+		// Update global min pointer if needed
+		if (x.key < this.min.key) {
+			this.min = x;
+		}
 	}
+
+	public void cut(HeapNode x, HeapNode y) { //O(1)
+		// Remove x from y's child list
+		// 1) fix sibling pointers in the child list
+		if (x.next == x) {
+			// x was the only child
+			y.child = null;
+		} else {
+			// x had siblings
+			x.next.prev = x.prev;
+			x.prev.next = x.next;
+
+			// If x was y.child pointer, move child pointer
+			if (y.child == x) {
+				y.child = x.next;
+			}
+		}
+		y.rank--;
+
+		// 2) Add x as a root in the top-level list
+		x.parent = null;
+		x.mark = false; // unmark the node that has just been cut
+
+		// Insert x into the root circular list (just like in `insert`)
+		addToRootList(x);
+
+		// The problem statement tracks total cuts:
+		this.totalCuts++;
+	}
+
+
+	private void cascadingCut(HeapNode y) { //O(1)
+		HeapNode z = y.parent;
+		if (z != null) {
+			if (!y.mark) {
+				// First cut from below?
+				y.mark = true;
+			} else {
+				// `y` was already marked:
+				cut(y, z);
+				cascadingCut(z);
+			}
+		}
+	}
+
+	// Documentation decreaseKey:
+/**
+ * decreaseKey(x, d) takes a node x whose key is reduced by d. After decreasing
+ * its key, if x violates the heap property (its key is now smaller than its
+ * parent's key), x is cut from its parent and placed into the root list.
+ * This may trigger cascading cuts: if the parent was already marked, it is
+ * also cut from its parent, and so on up the tree.
+ *
+ * Time complexity:
+ * - Decreasing x.key itself is O(1).
+ * - Checking x against its parent is O(1).
+ * - Cutting x from its parent is O(1) amortized, and placing x in the root list is also O(1).
+ * - Cascading cuts can propagate up the tree, but each node can only be cut once before
+ *   it must be reattached and marked again. This ensures the operation is amortized O(1).
+ *
+ * Hence, the amortized time complexity for decreaseKey is O(1).
+ */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 	/**
 	 * Delete the x from the heap.
 	 */
-	public void delete(HeapNode x) {
-		return; // should be replaced by student code
+	public void delete(HeapNode x) { //O(logn)
+		if (x == null) {
+			return; // Nothing to delete
+		}
+
+		int delta = x.key - Integer.MIN_VALUE + 1;  // Enough to ensure x becomes <= all keys
+		decreaseKey(x, delta);
+
+		// Now x is the global minimum, so removing it is just deleteMin().
+		deleteMin();
 	}
+
+	// Documentation delete:
+/**
+ *  Basically one O(1) operation - decreasing the provided node's key to minimal possible value, and subsequently
+ *  calling on deleteMin (O(logn)). Altogether O(logn).
+ */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 
 	/**
 	 * Return the total number of links.
 	 */
-	public int totalLinks() {
-		return 0; // should be replaced by student code
+	public int totalLinks() { //O(1)
+		return this.totalLinks;
 	}
 
 
 	/**
 	 * Return the total number of cuts.
 	 */
-	public int totalCuts() {
-		return 0; // should be replaced by student code
+	public int totalCuts() { //O(1)
+		return this.totalCuts;
 	}
+
 
 
 	/**
 	 * Meld the heap with heap2
 	 */
-	public void meld(FibonacciHeap heap2) {
-		return; // should be replaced by student code
+	public void meld(FibonacciHeap heap2) { //O(1)
+		// 1) If heap2 is null or empty, nothing to do.
+		if (heap2.isHeapEmpty()) {
+			return;
+		}
+
+		// 2) If 'this' heap is empty, adopt heap2's data.
+		if (this.isHeapEmpty()) {
+			this.min = heap2.min;
+			this.size = heap2.size;
+			this.numTrees = heap2.numTrees;
+			// Now clear out heap2 so it becomes redundant.
+			heap2.min = null;
+			heap2.size = 0;
+			heap2.numTrees = 0;
+			return;
+		}
+
+		// 3) Otherwise, both heaps are non-empty. We link their root lists.
+		// Temporarily store neighbors
+		HeapNode thisNext = this.min.next;    // Node after this.min
+		HeapNode heap2Prev = heap2.min.prev;  // Node before heap2.min
+
+		// Stitch the two circular lists together
+		this.min.next = heap2.min;
+		heap2.min.prev = this.min;
+
+		heap2Prev.next = thisNext;
+		thisNext.prev = heap2Prev;
+
+		// Update global min if needed
+		if (heap2.min.key < this.min.key) {
+			this.min = heap2.min;
+		}
+
+		// Accumulate heap2's size and number of trees
+		this.size += heap2.size;
+		this.numTrees += heap2.numTrees;
+
+		// 4) Clear out heap2
+		heap2.min = null;
 	}
+	// Documentation delete:
+/**
+ *  Melds the current heap (this) with another FibonacciHeap (heap2).
+ *  After calling meld, heap2 becomes redundant (effectively empty),
+ *  and 'this' contains all elements from both heaps.
+ *  The method does nothing but simple if-tests for edgecases and reassigning pointers consecutively. O(1).
+ */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 	/**
 	 * Return the number of elements in the heap
 	 */
-	public int size() {
-		return 42; // should be replaced by student code
+	public int size() { //O(1)
+		return this.size;
 	}
 
 
 	/**
 	 * Return the number of trees in the heap.
 	 */
-	public int numTrees() {
+	public int numTrees() { //O(1)
 		return 0; // should be replaced by student code
 	}
 
+	// Documentation totalLinks & totalCuts & size & numTrees :
+/**
+ *  Having maintained proper fields all along, we just return them all in O(1)
+ */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	/**
 	 * printer

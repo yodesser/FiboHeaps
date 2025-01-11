@@ -396,23 +396,46 @@ public class FibonacciHeap {
 	/**
 	 * Delete the x from the heap.
 	 */
-	public void delete(HeapNode x) { //O(logn)
+	public void delete(HeapNode x) { // O(logn) when x is the min, O(1) otherwise
 		if (x == null) {
 			return; // Nothing to delete
 		}
 
-		int delta = x.key - Integer.MIN_VALUE + 1;  // Enough to ensure x becomes <= all keys
-		decreaseKey(x, delta);
+		if (x == this.min) {
+			// If x is the minimum, proceed with the standard deleteMin process
+			deleteMin();
+			return;
+		}
 
-		// Now x is the global minimum, so removing it is just deleteMin().
-		deleteMin();
+		// Remove x from its parent's child list (if it has a parent)
+		if (x.parent != null) {
+			cut(x, x.parent);
+			cascadingCut(x.parent);
+		}
+
+		// Remove x from the root list
+		removeFromRootList(x);
+
+		// Update the heap size
+		this.size--;
 	}
 
-	// Documentation delete:
-/**
- *  Basically one O(1) operation - decreasing the provided node's key to minimal possible value, and subsequently
- *  calling on deleteMin (O(logn)). Altogether O(logn).
- */
+	/**
+	 * Documentation for delete:
+	 *
+	 * This delete method removes a node x from the Fibonacci Heap.
+	 * If x is the global minimum, it calls deleteMin to handle its removal,
+	 * involving consolidation to restore the heap's structure. Otherwise, it performs
+	 * the following steps:
+	 *
+	 * 1) If x has a parent, it is cut from its parent's child list using the cut method.
+	 *    This is followed by cascadingCut to maintain heap properties.
+	 * 2) x is then removed from the root list directly without triggering consolidation.
+	 * 3) The heap size is decremented to reflect the removal of x.
+	 *
+	 * Time Complexity:
+	 * - O(log n) when x is the minimum, as deleteMin involves consolidation.
+	 * - O(1) when x is not the minimum, as the removal and cutting are constant-time operations.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 

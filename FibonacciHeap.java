@@ -311,7 +311,7 @@ public class FibonacciHeap {
 	 */
 	public void decreaseKey(HeapNode x, int diff) {  //O(1)
 		if (diff <= 0 || x == null) {
-			return; // or throw exception -- must have 0 < diff < x.key
+			return;
 		}
 
 		x.key -= diff;
@@ -479,7 +479,7 @@ public class FibonacciHeap {
 		// 4) Clear out heap2
 		heap2.min = null;
 	}
-	// Documentation delete:
+	// Documentation meld:
 /**
  *  Melds the current heap (this) with another FibonacciHeap (heap2).
  *  After calling meld, heap2 becomes redundant (effectively empty),
@@ -494,15 +494,13 @@ public class FibonacciHeap {
 	 */
 	public int size() { //O(1)
 		return this.size;
-	}
+	} //O(1)
 
 
 	/**
 	 * Return the number of trees in the heap.
 	 */
-	public int numTrees() { //O(1)
-		return 0; // should be replaced by student code
-	}
+	public int numTrees() { return this.numTrees;} //O(1)
 
 	// Documentation totalLinks & totalCuts & size & numTrees :
 /**

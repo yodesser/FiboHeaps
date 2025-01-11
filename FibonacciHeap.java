@@ -409,8 +409,14 @@ public class FibonacciHeap {
 
 		// Remove x from its parent's child list (if it has a parent)
 		if (x.parent != null) {
-			cut(x, x.parent);
-			cascadingCut(x.parent);
+			HeapNode parent = x.parent;
+			cut(x, parent);
+			cascadingCut(parent);
+		}
+
+		// detach x's children (if it has)
+		if (x.child != null) {
+			detachChildren(x);
 		}
 
 		// Remove x from the root list

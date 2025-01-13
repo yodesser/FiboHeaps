@@ -57,7 +57,7 @@ public class FibonacciHeap {
 
 
 	public void removeFromRootList(HeapNode node) { //O(1)
-		node.next.prev = node.prev;
+		node.next.prev 	= node.prev;
 		node.prev.next = node.next;
 		this.numTrees--;
 	}
@@ -324,7 +324,7 @@ public class FibonacciHeap {
 		}
 
 		// Update global min pointer if needed
-		if (x.key < this.min.key) {
+		if (x.key <= this.min.key) {
 			this.min = x;
 		}
 	}
@@ -396,54 +396,47 @@ public class FibonacciHeap {
 	/**
 	 * Delete the x from the heap.
 	 */
-	public void delete(HeapNode x) { // O(logn) when x is the min, O(1) otherwise
+	public void delete(HeapNode x) { //O(logn)
 		if (x == null) {
 			return; // Nothing to delete
 		}
-
 		if (x == this.min) {
-			// If x is the minimum, proceed with the standard deleteMin process
 			deleteMin();
 			return;
 		}
 
-		// Remove x from its parent's child list (if it has a parent)
-		if (x.parent != null) {
-			HeapNode parent = x.parent;
-			cut(x, parent);
-			cascadingCut(parent);
-		}
+		HeapNode savedMin = this.min;
+		int delta = x.key - 1;  // Enough to ensure x becomes <= all keys
+		decreaseKey(x, delta);
 
-		// detach x's children (if it has)
-		if (x.child != null) {
-			detachChildren(x);
-		}
-
-		// Remove x from the root list
-		removeFromRootList(x);
-
-		// Update the heap size
-		this.size--;
+		// Now x is the global minimum, so removing it is just deleteMin().
+		delteMinNocons(savedMin);
 	}
 
-	/**
-	 * Documentation for delete:
-	 *
-	 * This delete method removes a node x from the Fibonacci Heap.
-	 * If x is the global minimum, it calls deleteMin to handle its removal,
-	 * involving consolidation to restore the heap's structure. Otherwise, it performs
-	 * the following steps:
-	 *
-	 * 1) If x has a parent, it is cut from its parent's child list using the cut method.
-	 *    This is followed by cascadingCut to maintain heap properties.
-	 * 2) x is then removed from the root list directly without triggering consolidation.
-	 * 3) The heap size is decremented to reflect the removal of x.
-	 *
-	 * Time Complexity:
-	 * - O(log n) when x is the minimum, as deleteMin involves consolidation.
-	 * - O(1) when x is not the minimum, as the removal and cutting are constant-time operations.
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	public void delteMinNocons(HeapNode savedMin) {
+		HeapNode oldMin = this.min;
 
+		// 1) Move children of oldMin to the root list
+		if (oldMin.child != null) {
+			detachChildren(oldMin);
+			// detachChildren() adds each child to the root list
+			// and sets child's parent=null, node.child=null, etc.
+		}
+
+		// 2) Remove oldMin itself from the root list
+		removeFromRootList(oldMin);
+		this.size--;
+
+		// 4) make savedMin the new min
+		this.min = savedMin;
+	}
+
+	// Documentation delete:
+/**
+ *  Basically one O(1) operation - decreasing the provided node's key to minimal possible value, and subsequently
+ *  calling on deleteMin (O(logn)). Altogether O(logn).
+ */
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 	/**

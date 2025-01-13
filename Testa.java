@@ -3,52 +3,18 @@ import java.util.Arrays;
 public class Testa {
 	public static void main(String[] args) {
 		FibonacciHeap heap = new FibonacciHeap();
-		heap.insert(1, "br");
-		heap.insert(12, "br");
-		heap.insert(415, "br");
-		heap.insert(421, "br");
-		heap.insert(456, "br");
-		heap.insert(1048, "br");
-		heap.printHeap();
-
-		heap.consolidate();
-		heap.printHeap();
-
+		FibonacciHeap.HeapNode node2 = heap.insert(2, "br");
+		FibonacciHeap.HeapNode node3 = heap.insert(3, "br");
+		FibonacciHeap.HeapNode node4 = heap.insert(4, "br");
+		FibonacciHeap.HeapNode node5 = heap.insert(5, "br");
+		FibonacciHeap.HeapNode node6 = heap.insert(6, "br");
+		FibonacciHeap.HeapNode node7 = heap.insert(7, "br");
 		heap.deleteMin();
-		heap.printHeap();
-
-		heap.insert(0, "sk");
-		heap.consolidate();
-		heap.printHeap();
-
-		heap.decreaseKey(heap.min.child.next, 2500);
-		heap.printHeap();
-		System.out.println(heap.totalCuts);
-		System.out.println(heap.totalLinks);
-
-		heap.decreaseKey(heap.min.next.child, 2500);
-		heap.printHeap();
-		System.out.println(heap.totalCuts);
-		System.out.println(heap.totalLinks);
-
-		heap.cut(heap.min.next.child, heap.min.next);
-		heap.printHeap();
-		System.out.println(heap.totalCuts);
-		System.out.println(heap.totalLinks);
-		System.out.println(heap.size);
-		System.out.println(heap.numTrees);
-
-		heap.delete(heap.min.next.child);
-		heap.printHeap();
-
-		FibonacciHeap heap2 = new FibonacciHeap();
-		heap2.insert(1, "br");
-		heap2.insert(12, "br");
-		heap2.insert(415, "br");
-		heap2.insert(421, "br");
-		heap2.consolidate();
-
-		heap.meld(heap2);
-		heap.printHeap();
+		System.out.println(node4.rank);
+		System.out.println(heap.numTrees());
+		heap.delete(node6);
+		System.out.println(node4.rank);
+		System.out.println(heap.numTrees());
+		System.out.println(heap.totalCuts());
 	}
 }

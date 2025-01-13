@@ -1,8 +1,16 @@
 /**
  * FibonacciHeap
- * <p>
+ * 1:
+ * Name: Iakov Odesser
+ * Username: iakovodesser
+ * ID: 209860188
+ * 2:
+ * Name: Eyal Sapir
+ * Username: eyalsapir
+ * ID: 206405417
  * An implementation of Fibonacci heap over positive integers.
  */
+
 public class FibonacciHeap {
 	public int size; //amount of nodes
 	public HeapNode min;
@@ -396,7 +404,7 @@ public class FibonacciHeap {
 	/**
 	 * Delete the x from the heap.
 	 */
-	public void delete(HeapNode x) { //O(logn)
+	public void delete(HeapNode x) { //Worst case O(logn), average O(1)
 		if (x == null) {
 			return; // Nothing to delete
 		}
@@ -433,9 +441,18 @@ public class FibonacciHeap {
 
 	// Documentation delete:
 /**
- *  Basically one O(1) operation - decreasing the provided node's key to minimal possible value, and subsequently
- *  calling on deleteMin (O(logn)). Altogether O(logn).
- */
+ * This method performs the following steps:
+ * 1. If the node is the minimum, it calls `deleteMin()` to remove it.
+ * 2. Otherwise, it decreases the node's key to make it the global minimum
+ *    (using `decreaseKey`), and then removes it using `delteMinNocons`.
+ *
+ * Runtime Analysis:
+ * - If the node is the minimum, `deleteMin` is O(log n)
+ * - If the node is not the minimum:
+ *   - `decreaseKey`: is O(1).
+ *   - `delteMinNocons` is dominated by the number of leaves detached from the minimum
+ *      which is worst case O(log n) but in average O(1).
+ *   - Hence ovreall run time is worst case O(log n) but in average O(1)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -529,48 +546,4 @@ public class FibonacciHeap {
  *  Having maintained proper fields all along, we just return them all in O(1)
  */
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	/**
-	 * printer
-	 */
-
-	public void printHeap() {
-		if (min == null) {
-			System.out.println("The heap is empty.");
-			return;
-		}
-
-		System.out.println("Fibonacci Heap (Root List):");
-		HeapNode current = min;
-		do {
-			System.out.print("[" + current.key + "] → ");
-			current = current.next;
-		} while (current != min);
-		System.out.println("(back to min)");
-
-		System.out.println("\nTree Structure:");
-		HeapNode root = min;
-		do {
-			printNode(root, "", true);
-			root = root.next;
-		} while (root != min);
-	}
-
-	private void printNode(HeapNode node, String prefix, boolean isTail) {
-		if (node == null) {
-			return;
-		}
-
-		// Print the current node
-		System.out.println(prefix + (isTail ? "└── " : "├── ") + "[" + node.key + "]");
-
-		// Recursively print children
-		if (node.child != null) {
-			HeapNode child = node.child;
-			do {
-				printNode(child, prefix + (isTail ? "    " : "│   "), child.next == node.child);
-				child = child.next;
-			} while (child != node.child);
-		}
-	}
 }

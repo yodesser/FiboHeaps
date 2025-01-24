@@ -30,17 +30,16 @@ public class ExperimentalPart {
                     nodesArray[j] = heap.insert(keys[j], "Node " + j); // Insert keys in descending order
                 }
 
-                // Perform deleteMax and deleteMin alternately until heap size is 2**5 - 1
+                // Perform deleteMin
                 heap.deleteMin();
                 int heapSize = n - 1;
                 int finalSize = (int) Math.pow(2, 5) - 1;
                 int counter = 0; // Start with the largest element in nodesArray
-
+                // perform deleteMax until list reaches final size
                 while (heapSize > finalSize) {
                     heap.delete(nodesArray[counter]); // Delete the node with the largest key
-                    heap.deleteMin(); // Perform deleteMin
                     counter++; // Move to the next largest node
-                    heapSize -= 2; // Two nodes removed in each iteration
+                    heapSize--;
                 }
 
                 long endTime = System.currentTimeMillis();

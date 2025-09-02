@@ -87,4 +87,34 @@ java Demo
 These bounds follow the classical Fibonacci-heap analysis (lazy consolidation, marking, and cascading cuts)
 
 
+## Implementation Notes
 
+Root list: circular doubly linked; min points at the current global minimum.
+
+Children: each node keeps a circular child list and its rank (#children).
+
+Consolidation: merges equal-rank roots after deleteMin using a rank table.
+
+Cuts: cut(x, y) and cascadingCut(y) implement the marking discipline.
+
+Instrumentation: totalLinks and totalCuts are updated in link and cut.
+
+## Invariants / Assumptions
+
+Keys are positive integers (as specified).
+
+decreaseKey(x, diff) requires diff > 0 and x != null.
+
+delete(x) is implemented via decreaseKey(x, x.key - 1) followed by a min-delete.
+
+## Suggestions for Tests
+
+Testa is a scrap file which we used for testing, you're welcome to use it. Some more suggestions: 
+
+Insert many items; verify nondecreasing sequence of deleteMin().
+
+Random decreaseKey operations; assert findMin() matches the known minimum.
+
+Meld two heaps and verify the size/min correctness.
+
+Track totalLinks() / totalCuts() under targeted scenarios.
